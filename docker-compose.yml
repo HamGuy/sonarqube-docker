@@ -1,0 +1,39 @@
+version: '3'
+services:
+  #SonarQube Container
+  sonarqube:
+    image: sonarqube:6.7-community #使用 6.7 社区版
+    container_name: sonarqube #镜像名，可选
+    depends_on:  #等数据库就绪后在启动 sonarqube
+      - mysql
+    ports: 
+      - "9000:9000" # web端口映射
+    links:
+      - mysql
+    environment: #sonarqube 环境变量
+      - SONARQUBE_JDBC_USERNAME=sonar #jdbc数据库连接 用户名
+      - SONARQUBE_JDBC_PASSWORD=sonar #jdbc数据库连接 用户密码
+      - SONARQUBE_JDBC_URL=jdbc:mysql://172.16.151.39:3306/sonar?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatements=true&useConfigs=maxPerformance&useSSL=false #jdbc 数据库连接字串
+    volumes: 
+      - ./plugins/backelite-sonar-swift-plugin-0.4.4.jar:/opt/sonarqube/extensions/plugins/backelite-sonar-swift-plugin-0.4.4.jar #将当前 plugin 目录下的插件映射到镜像中 sonarqube 的插件目录下
+      - ./conf/sonar.properties:/opt/sonarqube/conf/sonar.properties # 映射 sonarqueb 配置文件
+  #PostgreSQL Container
+  mysql:
+    image: mysql:5.6
+    container_name: mysql_sonar
+    # command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci #设置utf8字符集
+    restart: always 
+    volumes:
+      - ./data/mysql:/var/lib/mysql #映射数据库文件到本地
+    ports:
+      - "3306:3306"
+    environment: #mysal 环境变量
+      - MYSQL_ROOT_PASSWORD=rootpwd
+      - MYSQL_USER=sonar
+      - MYSQL_PASSWORD=sonar
+      - MYSQL_DATABASE=sonar
+  adminer: #  一个简单的 web 端数据库管理系统
+       image: adminer
+       restart: always
+       ports:
+          - 8088:8080
